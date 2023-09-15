@@ -1,0 +1,56 @@
+--- 
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-ss
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql-app
+  template:
+    metadata:
+      name: mysql-pod
+      namespace: default
+      labels:
+        app: mysql-app
+    spec:
+      containers:
+        - name: mysql-container
+          image: mysql:8.0.32
+          env:
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: wordpress-cm
+                  key: WORDPRESS_DB_NAME
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                  configMapKeyRef:
+                    name: wordpress-cm
+                    key: WORDPRESS_DB_PASSWORD
+          ports:
+            - name: mysql-port
+              containerPort: 3306
+          volumeMounts:
+            - name: mysql-db-vol
+              mountPath: /var/lib/mysql
+              subPath: mysql
+      initContainers:
+        - name: delete-existing-data
+          image: alpine:latest
+          command: ["sh", "-c", "rm -rf /mnt/lost+found*"]
+          volumeMounts:
+            - name: mysql-db-vol
+              mountPath: /mnt
+              subPath: mysql
+  volumeClaimTemplates:
+      - metadata:
+          name: mysql-db-vol
+        spec:
+          accessModes: [ "ReadWriteOnce" ]
+          storageClassName: "linode-block-storage"
+          resources:
+            requests:
+              storage: 10Gi

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress
+  namespace: default
+
+# wordpress.default.svc.cluster.local:3306
+spec:
+  # type: ClusterIP
+  # type: NodePort
+  type: LoadBalancer
+  selector:
+    app: wordpress-app
+  ports: 
+    - protocol: TCP
+      port: 80
+      targetPort: http-port
